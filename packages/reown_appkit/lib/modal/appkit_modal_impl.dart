@@ -1267,7 +1267,16 @@ class ReownAppKitModal
     try {
       final topic = _currentSession!.topic!;
       final metadataRedirect = _currentSession!.peer?.metadata.redirect;
-      final link = metadataRedirect?.native ?? metadataRedirect?.universal;
+      // Prefer the explorer registry's mobileLink over the peer-supplied
+      // metadata.redirect.native/.universal. The peer-supplied scheme is not
+      // guaranteed to be unique on a device — e.g. OKX Wallet self-reports
+      // `okx://`, which on Android is also registered by the OKX exchange
+      // app, causing the OS to launch the wrong app on session requests.
+      // The explorer mobileLink is wallet-id specific and matches what
+      // `connectSelectedWallet` uses on the initial pairing, keeping launch
+      // behavior consistent across the connect and request flows.
+      final peerLink = metadataRedirect?.native ?? metadataRedirect?.universal;
+      final link = walletRedirect.mobile ?? peerLink;
       final redirect = walletRedirect.copyWith(
         // /wc path will be added in CoreUtils
         mobile: link != null ? _removeWcPath(link) : null,
